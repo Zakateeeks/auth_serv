@@ -5,6 +5,6 @@ import "gorm.io/gorm"
 type User struct {
 	gorm.Model
 	Email        string `gorm:"unique"`
-	Password     string
-	RefreshToken string
+	Password     string `gorm:"not null"`
+	RefreshToken string `gorm:"not null"`
 }

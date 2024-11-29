@@ -1,8 +1,8 @@
 package main
 
 import (
-	"auth_serv/cmd/controllers"
-	"auth_serv/cmd/initial"
+	"auth_serv/internal/controllers"
+	"auth_serv/internal/initial"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +15,6 @@ func main() {
 	r := gin.Default()
 
 	r.POST("/signup", controllers.SignUp)
-	r.POST("/get", controllers.GetData)
 	r.POST("/refresh", controllers.Refresh)
 
 	r.Run()
