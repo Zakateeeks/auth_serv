@@ -23,6 +23,57 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	// Для старого
+	var existUser models.User
+	initial.DB.Where("email = ?", body.Email).First(&existUser)
+	if existUser.Email != "" {
+		cookieToken, err := c.Cookie("access_token")
+		if err == nil {
+			token, err := jwt.Parse(cookieToken, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("Unexpected signing method")
+				}
+				return []byte(os.Getenv("TOKEN")), nil
+			})
+			if err == nil && token.Valid {
+				c.JSON(http.StatusOK, gin.H{
+					"access_token":  cookieToken,
+					"refresh_token": existUser.RefreshToken,
+				})
+				return
+			}
+		}
+		tokenString, err := utils.CreateJWTToken(existUser.ID, c.ClientIP())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Failed to create token",
+			})
+		}
+		refreshToken, err := utils.GenerateRefreshToken()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Failed to generate refresh token",
+			})
+		}
+		hashRefresh, err := utils.HashRefreshToken(refreshToken)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Failed to hash refresh token",
+			})
+		}
+
+		existUser.RefreshToken = hashRefresh
+		initial.DB.Save(&existUser)
+		c.SetCookie("access_token", tokenString, 3600, "/", "", false, true)
+
+		c.JSON(http.StatusOK, gin.H{
+			"access_token":  tokenString,
+			"refresh_token": refreshToken,
+		})
+		return
+	}
+
+	// Для нового
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 12)
 
 	if err != nil {
@@ -104,6 +155,15 @@ func Refresh(c *gin.Context) {
 	userID, ok := claims["sub"]
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "userID not found in token"})
+		return
+	}
+
+	tokenIp, ok := claims["ip"]
+	if tokenIp != c.ClientIP() {
+		c.JSON(http.StatusUnauthorized, gin.H{"warning": "IP in Token different from current ip"})
+	}
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "IP not found in token"})
 		return
 	}
 
