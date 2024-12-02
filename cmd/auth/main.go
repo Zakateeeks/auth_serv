@@ -6,11 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Функция для инициализации БД и переменног окружения
 func init() {
 	initial.LoadEnvVar()
 	initial.ConnectToDb()
 	initial.SyncDatabase()
 }
+
+// Инициализация HTTP сервера с 2-мя REST эндпоинтами
 func main() {
 	r := gin.Default()
 

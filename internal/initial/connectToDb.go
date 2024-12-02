@@ -8,6 +8,7 @@ import (
 
 var DB *gorm.DB
 
+// ConnectToDb Функция для подключения к базе данных
 func ConnectToDb() {
 	var err error
 	dsn := os.Getenv("DB")

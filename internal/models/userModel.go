@@ -2,6 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
+// User Структура пользователя в БД
 type User struct {
 	gorm.Model
 	Email        string `gorm:"unique"`

@@ -12,6 +12,9 @@ import (
 	"os"
 )
 
+// SignUp Функкция, реализующая запрос /signup
+// Создаёт refresh и access токен пользователю, в случае если он не создан
+// если пользователь существует, то выводит токены пользователю
 func SignUp(c *gin.Context) {
 	var body struct {
 		Email    string `json:"email"`
@@ -22,8 +25,10 @@ func SignUp(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read body"})
 		return
 	}
-
-	// Для старого
+	/*
+		Этот участок кода отвечает за вывод refresh и access токенов
+		в случае, если пользователь уже зарегистрирован.
+	*/
 	var existUser models.User
 	initial.DB.Where("email = ?", body.Email).First(&existUser)
 	if existUser.Email != "" {
@@ -45,21 +50,18 @@ func SignUp(c *gin.Context) {
 		}
 		tokenString, err := utils.CreateJWTToken(existUser.ID, c.ClientIP())
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to create token",
-			})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token"})
+			return
 		}
 		refreshToken, err := utils.GenerateRefreshToken()
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to generate refresh token",
-			})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to generate refresh token"})
+			return
 		}
 		hashRefresh, err := utils.HashRefreshToken(refreshToken)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to hash refresh token",
-			})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to hash refresh token"})
+			return
 		}
 
 		existUser.RefreshToken = hashRefresh
@@ -73,7 +75,10 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	// Для нового
+	/*
+		Этот участок кода отвечает за регистрацию пользователя,
+		добавление данных в БД и генерацию access и refresh токенов.
+	*/
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 12)
 
 	if err != nil {
@@ -118,6 +123,8 @@ func SignUp(c *gin.Context) {
 	})
 }
 
+// Refresh Функция, реализуцющая запрос refresh
+// Обновляет refresh и access токен пользователя
 func Refresh(c *gin.Context) {
 	var body struct {
 		RefreshToken string `json:"refresh_token"`

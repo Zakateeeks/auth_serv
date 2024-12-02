@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// GenerateRefreshToken Функция для генерации refresh токена
 func GenerateRefreshToken() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -19,6 +20,7 @@ func GenerateRefreshToken() (string, error) {
 	return base64.StdEncoding.EncodeToString(b), nil
 }
 
+// CreateJWTToken Функция для создания access токена
 func CreateJWTToken(userID uint, clientIP string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": userID,
@@ -29,6 +31,7 @@ func CreateJWTToken(userID uint, clientIP string) (string, error) {
 	return token.SignedString([]byte(os.Getenv("TOKEN")))
 }
 
+// HashRefreshToken Функция для хэширования токена
 func HashRefreshToken(refreshToken string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(refreshToken), 12)
 	if err != nil {

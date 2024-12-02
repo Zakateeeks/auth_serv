@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+// LoadEnvVar Инициализация переменного окружения
 func LoadEnvVar() {
 	err := godotenv.Load("../../configs/.env")
 
